@@ -1,0 +1,85 @@
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.184.100:3306/mall_db?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+    username: root
+    password: mqw12345
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  application:
+    name: mall-gateway # 服务名称
+  cloud:
+    nacos:
+      server-addr: 192.168.184.100:8848
+      discovery:
+        username: nacos
+        password: nacos
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: user # 路由规则id，自定义，唯一
+          uri: lb://mall-user # 路由的目标服务，lb代表负载均衡，会从注册中心拉取服务列表
+          predicates: # 路由断言，判断当前请求是否符合当前规则，符合则路由到目标服务
+            - Path=/customer/** # 这里是以请求路径作为判断规则
+        - id: product
+          uri: lb://mall-product
+          predicates:
+            - Path=/product/**
+        - id: merchant
+          uri: lb://mall-merchant
+          predicates:
+            - Path=/merchant/**
+        - id: order
+          uri: lb://mall-order
+          predicates:
+            - Path=/order/**
+        - id: pay
+          uri: lb://pay-service
+          predicates:
+            - Path=/pay-orders/**
+
+knife4j:
+  # 聚合swagger文档
+  gateway:
+    enabled: true
+    # 指定手动配置的模式
+    strategy: manual
+    routes:
+      - name: 用户服务
+        # 真实子服务访问url地址-提供OpenAPI的文档
+        url: /customer/v3/api-docs?group=user-api
+        service-name: mall-user
+      - name: 订单服务
+        url: /order/v3/api-docs?group=order-api
+        service-name: mall-order
+      - name: 商品服务
+        url: /product/v3/api-docs?group=product-api
+        service-name: mall-product
+      - name: 商户服务
+        url: /merchant/v3/api-docs?group=merchant-api
+        service-name: mall-merchant
+
+mall:
+  jwt:
+    secretKey: mqw10661x
+    tokenTTL: 30m
+  auth:
+    excludePaths:
+      - /product/**
+      - /customer/login
+      - /customer/register
+      - /customer/v3/**
+      - /merchant/login
+      - /merchant/register
+      - /merchant/v3/**
+      - /hi
+server:
+  port: 9898
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.alibaba.nacos: DEBUG
+    org.springframework.cloud.loadbalancer: DEBUG
+
+
